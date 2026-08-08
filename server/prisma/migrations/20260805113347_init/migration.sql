@@ -1,0 +1,63 @@
+-- CreateTable
+CREATE TABLE "Admin" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Ekub" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "quotaAmount" INTEGER NOT NULL,
+    "totalQuotas" INTEGER NOT NULL,
+    "cycle" TEXT NOT NULL DEFAULT 'MONTHLY',
+    "startDate" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
+CREATE TABLE "Member" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "ekubId" INTEGER NOT NULL,
+    "name" TEXT NOT NULL,
+    "address" TEXT NOT NULL,
+    "phone" TEXT,
+    "preferredAmount" INTEGER NOT NULL,
+    "quotaId" INTEGER,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Member_ekubId_fkey" FOREIGN KEY ("ekubId") REFERENCES "Ekub" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Member_quotaId_fkey" FOREIGN KEY ("quotaId") REFERENCES "Quota" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Quota" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "ekubId" INTEGER NOT NULL,
+    "position" INTEGER NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "winnerAt" DATETIME,
+    CONSTRAINT "Quota_ekubId_fkey" FOREIGN KEY ("ekubId") REFERENCES "Ekub" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Payment" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "quotaId" INTEGER NOT NULL,
+    "memberId" INTEGER NOT NULL,
+    "amount" INTEGER NOT NULL,
+    "receiptUrl" TEXT,
+    "note" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'PAID',
+    "paidAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Payment_quotaId_fkey" FOREIGN KEY ("quotaId") REFERENCES "Quota" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Payment_memberId_fkey" FOREIGN KEY ("memberId") REFERENCES "Member" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Admin_username_key" ON "Admin"("username");

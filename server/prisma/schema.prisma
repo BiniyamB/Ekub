@@ -1,0 +1,101 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Cycle {
+  WEEKLY
+  MONTHLY
+  ANNUALLY
+}
+
+enum EkubStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum DrawStatus {
+  PENDING
+  SELECTED
+}
+
+enum PaymentStatus {
+  PAID
+  PENDING
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+}
+
+model Ekub {
+  id          Int         @id @default(autoincrement())
+  name        String
+  description String?
+  quotaAmount Int
+  totalQuotas Int
+  cycle       Cycle       @default(MONTHLY)
+  startDate   DateTime    @default(now())
+  status      EkubStatus  @default(ACTIVE)
+  createdAt   DateTime    @default(now())
+
+  quotas  Quota[]
+  members Member[]
+}
+
+model Member {
+  id              Int      @id @default(autoincrement())
+  ekubId          Int
+  name            String
+  address         String
+  phone           String?
+  preferredAmount Int
+  quotaAmount     Int?
+  shareGroup      Int?
+  quotaId         Int?
+  createdAt       DateTime @default(now())
+
+  ekub     Ekub      @relation(fields: [ekubId], references: [id], onDelete: Cascade)
+  quota    Quota?    @relation(fields: [quotaId], references: [id])
+  payments          Payment[] @relation("PaidPayments")
+  receivedPayments  Payment[] @relation("ReceivedPayments")
+}
+
+model Quota {
+  id       Int        @id @default(autoincrement())
+  ekubId   Int
+  position Int
+  status   DrawStatus @default(PENDING)
+  winnerAt DateTime?
+
+  ekub     Ekub      @relation(fields: [ekubId], references: [id], onDelete: Cascade)
+  members  Member[]
+  payments Payment[]
+}
+
+model Payment {
+  id         Int           @id @default(autoincrement())
+  quotaId    Int
+  memberId   Int
+  amount     Int
+  receiptUrl String?
+  note       String?
+  status     PaymentStatus @default(PAID)
+  paidAt     DateTime      @default(now())
+  createdAt  DateTime      @default(now())
+
+  quota      Quota    @relation(fields: [quotaId], references: [id], onDelete: Cascade)
+  member     Member   @relation("PaidPayments", fields: [memberId], references: [id], onDelete: Cascade)
+  recipient  Member?  @relation("ReceivedPayments", fields: [recipientId], references: [id], onDelete: SetNull)
+  recipientId Int?
+}
