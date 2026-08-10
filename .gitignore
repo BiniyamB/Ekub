@@ -6,3 +6,4 @@ server/uploads/
 .env.local
 server/.env
 .DS_Store
+.git-client-backup/
