@@ -98,13 +98,14 @@ export class MembersService {
     if (!round) {
       throw new BadRequestException('This round has no payment plan yet');
     }
-    const isAssignedPayer = round.payers.some((p) => p.memberId === user.id);
-    if (!isAssignedPayer) {
+    const assignment = round.payers.find((p) => p.memberId === user.id);
+    if (!assignment) {
       throw new BadRequestException('You are not assigned to pay this round');
     }
-    const isWinner = round.winners.some((w) => w.realId === data.recipientId);
-    if (!isWinner) {
-      throw new BadRequestException('Choose a winner of this round');
+    if (data.recipientId !== assignment.paysTo) {
+      throw new BadRequestException(
+        `You are assigned to pay ${assignment.paysToName}`,
+      );
     }
     if (!data.amount || data.amount <= 0) {
       throw new BadRequestException('Enter a paid amount');
@@ -134,6 +135,67 @@ export class MembersService {
         status: PaymentStatus.SUBMITTED,
       },
     });
+  }
+
+  /** The payer edits their own submitted receipt (amount, note and optionally
+   *  a replacement image). Only allowed while the receipt is still SUBMITTED
+   *  and the round has not been closed, so it cannot alter a confirmed
+   *  payment. */
+  async updateReceipt(
+    user: MemberAuthUser,
+    paymentId: number,
+    file: Express.Multer.File | undefined,
+    data: { amount: number; note?: string },
+  ) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { quota: true },
+    });
+    if (!payment) throw new NotFoundException('Receipt not found');
+    if (payment.memberId !== user.id) {
+      throw new ForbiddenException('You can only edit your own receipt');
+    }
+    if (payment.status !== PaymentStatus.SUBMITTED) {
+      throw new BadRequestException('Only a pending receipt can be edited');
+    }
+    if (payment.quota.closedAt) {
+      throw new BadRequestException('This round is already closed');
+    }
+    if (!data.amount || data.amount <= 0) {
+      throw new BadRequestException('Enter a paid amount');
+    }
+
+    return this.prisma.payment.update({
+      where: { id: paymentId },
+      data: {
+        amount: data.amount,
+        ...(data.note !== undefined ? { note: data.note } : {}),
+        ...(file
+          ? { receiptUrl: `/uploads/${file.filename}` }
+          : {}),
+      },
+    });
+  }
+
+  /** The payer deletes their own submitted receipt. Only allowed while the
+   *  receipt is still SUBMITTED and the round has not been closed. */
+  async deleteReceipt(user: MemberAuthUser, paymentId: number) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: { quota: true },
+    });
+    if (!payment) throw new NotFoundException('Receipt not found');
+    if (payment.memberId !== user.id) {
+      throw new ForbiddenException('You can only delete your own receipt');
+    }
+    if (payment.status !== PaymentStatus.SUBMITTED) {
+      throw new BadRequestException('Only a pending receipt can be deleted');
+    }
+    if (payment.quota.closedAt) {
+      throw new BadRequestException('This round is already closed');
+    }
+    await this.prisma.payment.delete({ where: { id: paymentId } });
+    return { ok: true };
   }
 
   /** The winner reviews a payer's receipt and confirms it. Only the payee of

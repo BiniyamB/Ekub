@@ -47,6 +47,7 @@ export function MemberDashboard({
 }) {
   const qc = useQueryClient();
   const [payOpen, setPayOpen] = useState(false);
+  const [editingReceipt, setEditingReceipt] = useState<PlanReceipt | null>(null);
   const [viewingReceipt, setViewingReceipt] = useState<PlanReceipt | null>(
     null,
   );
@@ -222,7 +223,7 @@ export function MemberDashboard({
               </div>
               <div>
                 <div className="text-base font-bold">
-                  Round {current.position}
+                  Round {current.roundNumber}
                   {current.closed ? " — closed" : " — in progress"}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -249,6 +250,7 @@ export function MemberDashboard({
               round={current}
               member={me}
               onOpen={() => setPayOpen(true)}
+              onEdit={(r) => setEditingReceipt(r)}
             />
           ) : (
             <p className="mt-4 rounded-2xl bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
@@ -272,9 +274,10 @@ export function MemberDashboard({
               >
                 <div>
                   <div className="text-sm font-bold">
-                    Round {round.position}
+                    Round {round.roundNumber}
                   </div>
                   <div className="text-xs text-muted-foreground">
+                    Quota #{round.position} ·{" "}
                     {round.winners.map((w) => w.name).join(", ")} ·{" "}
                     {formatDate(round.winnerAt)}
                   </div>
@@ -327,15 +330,26 @@ export function MemberDashboard({
         </div>
       </Reveal>
 
-      {/* Payer payment popup */}
+      {/* Payer payment popup (submit or edit) */}
       {current && (
         <PayerPaymentModal
-          open={payOpen}
-          onClose={() => setPayOpen(false)}
+          open={payOpen || editingReceipt !== null}
+          onClose={() => {
+            setPayOpen(false);
+            setEditingReceipt(null);
+          }}
           round={current}
           member={me}
           token={token}
+          editing={editingReceipt}
           onSubmitted={() => void refresh()}
+          onDelete={async (receipt) => {
+            await apiFetch(`/me/receipts/${receipt.id}`, {
+              method: "DELETE",
+              token,
+            });
+            await refresh();
+          }}
         />
       )}
 
@@ -474,10 +488,12 @@ function PayerPanel({
   round,
   member,
   onOpen,
+  onEdit,
 }: {
   round: PaymentRound;
   member: MeMember;
   onOpen: () => void;
+  onEdit: (receipt: PlanReceipt) => void;
 }) {
   const me = round.payers.find((p) => p.memberId === member.id)!;
   const receipt = round.receipts.find((r) => r.payerId === member.id);
@@ -503,10 +519,15 @@ function PayerPanel({
               <CheckCircle2 className="h-3 w-3" /> Confirmed by winner
             </Badge>
           ) : submitted ? (
-            <Badge tone="warning">
-              <Clock className="h-3 w-3" /> Waiting for {me.paysToName} to
-              confirm
-            </Badge>
+            <>
+              <Badge tone="warning">
+                <Clock className="h-3 w-3" /> Waiting for {me.paysToName} to
+                confirm
+              </Badge>
+              <Button variant="outline" size="sm" onClick={() => onEdit(receipt)}>
+                <Upload className="h-4 w-4" /> Edit
+              </Button>
+            </>
           ) : (
             <Button onClick={onOpen}>
               <Send className="h-4 w-4" /> Submit my receipt
@@ -515,9 +536,11 @@ function PayerPanel({
         </div>
       </div>
       <p className="text-xs text-muted-foreground">
-        Every member is assigned a winner by the system. Pick your assigned
-        winner, attach a photo of your payment, and the winner confirms it
-        after reviewing the receipt.
+        The system decides who each member pays — it balances every winner&apos;s
+        pot so each member is assigned exactly one winner. Attach a photo of
+        your payment, and the winner confirms it after reviewing the receipt.
+        You can edit or delete your receipt while it&apos;s still waiting for
+        confirmation.
       </p>
     </div>
   );
@@ -606,6 +629,9 @@ function MemberEkubView({
           Every member is combined into a quota slot. Members of a drawn quota
           share that round&apos;s pot.
         </p>
+
+        <DrawOrder quotas={ekub.quotas} />
+
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {ekub.quotas.map((quota) => {
             const isWinner = quota.status === "SELECTED";
@@ -641,6 +667,9 @@ function MemberEkubView({
                     <div>
                       <div className="text-sm font-bold">
                         Quota {quota.position}
+                        {isWinner && quota.roundNumber
+                          ? ` — won round #${quota.roundNumber}`
+                          : ""}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {isWinner
@@ -867,5 +896,47 @@ function LandingBadge() {
       <Sparkles className="h-4 w-4 text-amber-500" />
       Traditional ekub, reimagined for the digital age
     </span>
+  );
+}
+
+/** The sequence in which quotas win the draw — round 1, round 2, ... sorted by
+ *  winner timestamp, with the quota that won each one. */
+function DrawOrder({ quotas }: { quotas: Ekub["quotas"] }) {
+  const drawn = quotas
+    .filter((q) => q.status === "SELECTED" && q.roundNumber != null)
+    .sort((a, b) => (a.roundNumber ?? 0) - (b.roundNumber ?? 0));
+
+  if (drawn.length === 0) return null;
+
+  return (
+    <div className="mb-6 rounded-2xl border border-border bg-card p-4">
+      <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        <Radio className="h-4 w-4 text-emerald-500" /> Draw order — which quota
+        won each round
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        {drawn.map((q, i) => (
+          <div key={q.id} className="flex items-center gap-2">
+            {i > 0 && <span className="text-muted-foreground">→</span>}
+            <div
+              className={cn(
+                "flex items-center gap-2 rounded-xl px-3 py-1.5 text-sm font-semibold",
+                i === drawn.length - 1
+                  ? "hero-gradient text-white shadow-lg shadow-fuchsia-500/30"
+                  : "bg-muted",
+              )}
+            >
+              <span>
+                Round {q.roundNumber}
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span>
+                Quota #{q.position}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

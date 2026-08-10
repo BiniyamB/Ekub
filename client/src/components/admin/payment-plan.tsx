@@ -114,7 +114,9 @@ export function PaymentPlanPanel({ ekub, token }: { ekub: Ekub; token: string })
                   #{round.position}
                 </div>
                 <div>
-                  <div className="text-sm font-bold">Round {round.position}</div>
+                  <div className="text-sm font-bold">
+                    Round {round.roundNumber} · Quota #{round.position}
+                  </div>
                   <div className="text-xs text-muted-foreground">
                     Pot {formatMoney(round.pot)} · won{" "}
                     {formatDate(round.winnerAt)}

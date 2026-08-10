@@ -173,6 +173,19 @@ export class EkubsService {
     // shares are paid to them by the remaining members.
     const potOf = (fill: number) => round2(fill * (slots - 1));
 
+    // The draw order: the round in which each drawn quota won (1 = first draw,
+    // 2 = second draw, ...), derived from the chronological winner timestamps.
+    const drawnByTime = ekub.quotas
+      .filter((q) => q.status === 'SELECTED')
+      .sort(
+        (a, b) =>
+          new Date(a.winnerAt ?? 0).getTime() -
+          new Date(b.winnerAt ?? 0).getTime(),
+      );
+    const roundNumberOf = new Map(
+      drawnByTime.map((q, i) => [q.id, i + 1]),
+    );
+
     const roundsPlan = ekub.quotas
       .filter((q) => q.status === 'SELECTED' && q.members.length > 0)
       .map((q) => {
@@ -295,6 +308,7 @@ export class EkubsService {
         return {
           quotaId: q.id,
           position: q.position,
+          roundNumber: roundNumberOf.get(q.id) ?? q.position,
           winnerAt: q.winnerAt,
           closedAt: q.closedAt,
           closed: q.closedAt != null,
@@ -308,6 +322,7 @@ export class EkubsService {
             payeeId: p.recipientId,
             payeeName: p.recipient?.name ?? '',
             amount: p.amount,
+            note: p.note,
             receiptUrl: p.receiptUrl,
             paidAt: p.paidAt,
             status: p.status,
@@ -1228,6 +1243,22 @@ export class EkubsService {
     };
     const members = ekub.members ?? [];
     const quotas = ekub.quotas ?? [];
+    // Round number (draw order) for each quota: 1 = first drawn, etc.
+    const drawnByTime = quotas
+      .filter((q: any) => q.status === 'SELECTED')
+      .sort(
+        (a: any, b: any) =>
+          new Date(a.winnerAt ?? 0).getTime() -
+          new Date(b.winnerAt ?? 0).getTime(),
+      );
+    const roundNumberOf = new Map(
+      drawnByTime.map((q: any, i: number) => [q.id, i + 1]),
+    );
+    const quotasWithRound = quotas.map((q: any) => ({
+      ...q,
+      roundNumber:
+        q.status === 'SELECTED' ? roundNumberOf.get(q.id) ?? null : null,
+    }));
     const totalCollected = quotas.reduce(
       (s: number, q: any) =>
         s +
@@ -1237,6 +1268,7 @@ export class EkubsService {
     const realId = (m: any) => m.shareGroup ?? m.id;
     return {
       ...ekub,
+      quotas: quotasWithRound,
       cycleLabel: cycleLabel[ekub.cycle as Cycle],
       totalMembers: new Set(members.map(realId)).size,
       membersAssigned: new Set(

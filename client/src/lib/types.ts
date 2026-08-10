@@ -69,6 +69,7 @@ export interface Quota {
   id: number;
   ekubId: number;
   position: number;
+  roundNumber: number | null;
   status: DrawStatus;
   winnerAt: string | null;
   closedAt: string | null;
@@ -136,6 +137,7 @@ export interface PlanReceipt {
   payeeId: number | null;
   payeeName: string;
   amount: number;
+  note: string | null;
   receiptUrl: string | null;
   paidAt: string;
   status: PaymentStatus;
@@ -145,6 +147,7 @@ export interface PlanReceipt {
 export interface PaymentRound {
   quotaId: number;
   position: number;
+  roundNumber: number;
   winnerAt: string | null;
   closedAt: string | null;
   closed: boolean;

@@ -1,9 +1,11 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   Req,
   UploadedFile,
@@ -59,6 +61,39 @@ export class MembersController {
       amount: parseInt(body.amount, 10),
       note: body.note,
     });
+  }
+
+  @Patch('receipts/:id')
+  @UseInterceptors(
+    FileInterceptor('receipt', {
+      storage: diskStorage({
+        destination: join(process.cwd(), 'uploads'),
+        filename: (_req, file, cb) => {
+          const name = `${Date.now()}-${randomBytes(4).toString('hex')}${extname(file.originalname)}`;
+          cb(null, name);
+        },
+      }),
+    }),
+  )
+  updateReceipt(
+    @Req() req: { user: MemberAuthUser },
+    @Param('id', ParseIntPipe) id: number,
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Body()
+    body: { amount: string; note?: string },
+  ) {
+    return this.members.updateReceipt(req.user, id, file, {
+      amount: parseInt(body.amount, 10),
+      note: body.note,
+    });
+  }
+
+  @Delete('receipts/:id')
+  deleteReceipt(
+    @Req() req: { user: MemberAuthUser },
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.members.deleteReceipt(req.user, id);
   }
 
   @Post('receipts/:id/confirm')

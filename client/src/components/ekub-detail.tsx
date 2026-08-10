@@ -216,7 +216,12 @@ export function EkubDetail({
                         #{quota.position}
                       </div>
                       <div>
-                        <div className="text-sm font-bold">Quota {quota.position}</div>
+                        <div className="text-sm font-bold">
+                          Quota {quota.position}
+                          {isWinner && quota.roundNumber
+                            ? ` — won round #${quota.roundNumber}`
+                            : ""}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {isWinner
                             ? `Won on ${formatDate(quota.winnerAt)}`
