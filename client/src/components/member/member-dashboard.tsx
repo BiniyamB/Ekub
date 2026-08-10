@@ -535,13 +535,6 @@ function PayerPanel({
           )}
         </div>
       </div>
-      <p className="text-xs text-muted-foreground">
-        The system decides who each member pays — it balances every winner&apos;s
-        pot so each member is assigned exactly one winner. Attach a photo of
-        your payment, and the winner confirms it after reviewing the receipt.
-        You can edit or delete your receipt while it&apos;s still waiting for
-        confirmation.
-      </p>
     </div>
   );
 }
@@ -667,9 +660,6 @@ function MemberEkubView({
                     <div>
                       <div className="text-sm font-bold">
                         Quota {quota.position}
-                        {isWinner && quota.roundNumber
-                          ? ` — won round #${quota.roundNumber}`
-                          : ""}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {isWinner
@@ -680,7 +670,10 @@ function MemberEkubView({
                   </div>
                   {isWinner ? (
                     <Badge tone="warning" className="animate-pulse">
-                      <Trophy className="h-3 w-3" /> Winner
+                      <Trophy className="h-3 w-3" />{" "}
+                      {quota.roundNumber
+                        ? `${ordinal(quota.roundNumber)} winner`
+                        : "Winner"}
                     </Badge>
                   ) : (
                     <Badge>Pending</Badge>
@@ -926,10 +919,9 @@ function DrawOrder({ quotas }: { quotas: Ekub["quotas"] }) {
                   : "bg-muted",
               )}
             >
-              <span>
-                Round {q.roundNumber}
+              <span className="rounded-full bg-white/20 px-1.5 text-xs font-extrabold">
+                {ordinal(q.roundNumber ?? i + 1)}
               </span>
-              <span className="text-muted-foreground">·</span>
               <span>
                 Quota #{q.position}
               </span>
@@ -939,4 +931,10 @@ function DrawOrder({ quotas }: { quotas: Ekub["quotas"] }) {
       </div>
     </div>
   );
+}
+
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
 }

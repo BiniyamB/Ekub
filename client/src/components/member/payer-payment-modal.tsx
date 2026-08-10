@@ -53,6 +53,8 @@ export function PayerPaymentModal({
     setLoading(true);
     try {
       const form = new FormData();
+      form.append("quotaId", String(round.quotaId));
+      form.append("recipientId", String(assigned.paysTo));
       form.append("amount", amount);
       if (note) form.append("note", note);
       if (file) form.append("receipt", file);
@@ -126,7 +128,7 @@ export function PayerPaymentModal({
         <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             <UserCheck className="h-4 w-4 text-primary" />
-            Assigned payee (auto-calculated)
+            Assigned payee
           </div>
           <div className="mt-1.5 flex items-center justify-between">
             <span className="text-base font-bold">{assigned.paysToName}</span>
@@ -134,10 +136,6 @@ export function PayerPaymentModal({
               {formatMoney(assigned.owed)}
             </span>
           </div>
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            The system balances every winner&apos;s pot, so each member pays
-            exactly one assigned winner. You cannot change who you pay.
-          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

@@ -32,6 +32,12 @@ const statusTone: Record<PayStatus, "success" | "warning" | "danger"> = {
   UNPAID: "danger",
 };
 
+function ordinal(n: number): string {
+  const s = ["th", "st", "nd", "rd"];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
+
 export function EkubDetail({
   ekub: initial,
   initialPlan,
@@ -218,9 +224,6 @@ export function EkubDetail({
                       <div>
                         <div className="text-sm font-bold">
                           Quota {quota.position}
-                          {isWinner && quota.roundNumber
-                            ? ` — won round #${quota.roundNumber}`
-                            : ""}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {isWinner
@@ -231,7 +234,10 @@ export function EkubDetail({
                     </div>
                     {isWinner ? (
                       <Badge tone="warning" className="animate-pulse">
-                        <Trophy className="h-3 w-3" /> Winner
+                        <Trophy className="h-3 w-3" />{" "}
+                        {quota.roundNumber
+                          ? `${ordinal(quota.roundNumber)} winner`
+                          : "Winner"}
                       </Badge>
                     ) : (
                       <Badge>Pending</Badge>
