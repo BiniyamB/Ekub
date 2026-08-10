@@ -184,6 +184,9 @@ export function MemberDashboard({
         </div>
       </div>
 
+      {/* What members must do */}
+      <MemberHowTo />
+
       {/* Current round */}
       {!current ? (
         <div className="glass flex flex-col items-center gap-3 rounded-3xl p-12 text-center">
@@ -364,6 +367,54 @@ export function MemberDashboard({
           void refresh();
         }}
       />
+    </div>
+  );
+}
+
+/** Short plain-English guide so members know exactly what to do and when. */
+function MemberHowTo() {
+  const steps = [
+    {
+      title: "Your quota's turn",
+      desc: "Each round, one quota wins by a live random draw (1st, 2nd, 3rd…). Watch it happen and wait your turn.",
+    },
+    {
+      title: "When you're a payer",
+      desc: "Pay the exact amount to the winner assigned to you, then upload a photo of your receipt.",
+    },
+    {
+      title: "When you're a winner",
+      desc: "Review each payer's receipt, then confirm it once you actually receive the money.",
+    },
+    {
+      title: "Round closes, next draw",
+      desc: "Once all receipts are confirmed, the round closes and the admin runs the next draw.",
+    },
+  ];
+
+  return (
+    <div className="glass mb-6 rounded-3xl border-l-4 border-l-primary p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <h2 className="text-sm font-extrabold uppercase tracking-wide">
+          What you need to do
+        </h2>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {steps.map((s, i) => (
+          <div key={s.title} className="rounded-2xl bg-muted/40 p-3">
+            <div className="mb-1 flex items-center gap-2">
+              <span className="hero-gradient flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white">
+                {i + 1}
+              </span>
+              <span className="text-sm font-bold">{s.title}</span>
+            </div>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {s.desc}
+            </p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

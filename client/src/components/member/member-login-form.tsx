@@ -91,6 +91,49 @@ export function MemberLoginForm({
           your sign-in details.
         </p>
       </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+        className="glass mt-6 w-full rounded-3xl p-6"
+      >
+        <div className="mb-3 flex items-center gap-2">
+          <Coins className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-extrabold uppercase tracking-wide">
+            How an ekub works here
+          </h2>
+        </div>
+        <ol className="space-y-2.5 text-sm text-muted-foreground">
+          <li className="flex gap-2.5">
+            <span className="hero-gradient flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white">
+              1
+            </span>
+            Your admin creates the circle, adds members, and the system
+            combines people into quota slots.
+          </li>
+          <li className="flex gap-2.5">
+            <span className="hero-gradient flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white">
+              2
+            </span>
+            Each round, a live random draw picks one quota to win (1st, 2nd,
+            3rd…). Winners receive the pot.
+          </li>
+          <li className="flex gap-2.5">
+            <span className="hero-gradient flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white">
+              3
+            </span>
+            Every payer pays their assigned winner and uploads a receipt photo.
+          </li>
+          <li className="flex gap-2.5">
+            <span className="hero-gradient flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-extrabold text-white">
+              4
+            </span>
+            Winners confirm each receipt, the round closes, and the next draw
+            happens.
+          </li>
+        </ol>
+      </motion.div>
     </div>
   );
 }
