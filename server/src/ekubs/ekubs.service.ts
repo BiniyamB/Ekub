@@ -4,6 +4,7 @@ import {
   MessageEvent,
   NotFoundException,
 } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
 import { interval, merge, Observable, Subject } from 'rxjs';
 import { filter, map } from 'rxjs/operators';
 import {
@@ -192,7 +193,12 @@ export class EkubsService {
             0,
           );
           const received = q.payments
-            .filter((p) => p.recipient && realId(p.recipient) === realId(first))
+            .filter(
+              (p) =>
+                p.status === 'PAID' &&
+                p.recipient &&
+                realId(p.recipient) === realId(first),
+            )
             .reduce((s, p) => s + p.amount, 0);
           return {
             memberId: first.id,
@@ -261,7 +267,10 @@ export class EkubsService {
         const payers = winners.flatMap((w) =>
           w.assigned.map((a) => {
             const paid = q.payments
-              .filter((pay) => realId(pay.member) === a.memberId)
+              .filter(
+                (pay) =>
+                  pay.status === 'PAID' && realId(pay.member) === a.memberId,
+              )
               .reduce((s, pay) => s + pay.amount, 0);
             return {
               memberId: a.memberId,
@@ -287,6 +296,8 @@ export class EkubsService {
           quotaId: q.id,
           position: q.position,
           winnerAt: q.winnerAt,
+          closedAt: q.closedAt,
+          closed: q.closedAt != null,
           pot: round2(winners.reduce((s, w) => s + w.pot, 0)),
           winners,
           payers,
@@ -299,6 +310,8 @@ export class EkubsService {
             amount: p.amount,
             receiptUrl: p.receiptUrl,
             paidAt: p.paidAt,
+            status: p.status,
+            confirmedByWinnerAt: p.confirmedByWinnerAt,
           })),
         };
       });
@@ -369,6 +382,7 @@ export class EkubsService {
     if (ekub.status !== EkubStatus.ACTIVE) {
       throw new BadRequestException('Ekub is not active');
     }
+    const creds = await this.credentialsData(dto.username, dto.password);
     await this.prisma.member.create({
       data: {
         ekubId,
@@ -376,6 +390,9 @@ export class EkubsService {
         address: dto.address,
         phone: dto.phone,
         preferredAmount: dto.preferredAmount,
+        ...(creds
+          ? { username: creds.username, password: creds.password }
+          : {}),
       },
     });
     return this.findOne(ekubId);
@@ -408,19 +425,31 @@ export class EkubsService {
       where: { id: memberId, ekubId },
     });
     if (!member) throw new NotFoundException('Member not found');
-    await this.prisma.member.update({
-      where: { id: memberId },
-      data: {
-        name: dto.name,
-        address: dto.address,
-        phone: dto.phone,
-        preferredAmount: dto.preferredAmount,
-        quotaAmount:
-          member.quotaAmount === member.preferredAmount
-            ? dto.preferredAmount
-            : member.quotaAmount,
-      },
-    });
+
+    const data: Prisma.MemberUpdateInput = {
+      name: dto.name,
+      address: dto.address,
+      phone: dto.phone,
+      preferredAmount: dto.preferredAmount,
+      quotaAmount:
+        member.quotaAmount === member.preferredAmount
+          ? dto.preferredAmount
+          : member.quotaAmount,
+    };
+    if (dto.username !== undefined && dto.username.trim().length > 0) {
+      const uname = dto.username.trim();
+      const taken = await this.prisma.member.findFirst({
+        where: { username: uname, id: { not: memberId } },
+      });
+      if (taken) {
+        throw new BadRequestException(`Username "${uname}" is already taken`);
+      }
+      data.username = uname;
+    }
+    if (dto.password !== undefined && dto.password.trim().length > 0) {
+      data.password = await bcrypt.hash(dto.password, 10);
+    }
+    await this.prisma.member.update({ where: { id: memberId }, data });
     return this.findOne(ekubId);
   }
 
@@ -573,16 +602,51 @@ export class EkubsService {
   async registerMembers(ekubId: number, dtos: CreateMemberDto[]) {
     const ekub = await this.prisma.ekub.findUnique({ where: { id: ekubId } });
     if (!ekub) throw new NotFoundException('Ekub not found');
-    await this.prisma.member.createMany({
-      data: dtos.map((d) => ({
+    const data: Prisma.MemberCreateManyInput[] = [];
+    const usedUsernames = new Set<string>();
+    for (const d of dtos) {
+      let creds: { username: string; password: string } | undefined;
+      if (d.username && d.password) {
+        if (usedUsernames.has(d.username.trim())) {
+          throw new BadRequestException(
+            `Username "${d.username.trim()}" is used twice in this batch`,
+          );
+        }
+        usedUsernames.add(d.username.trim());
+        creds = await this.credentialsData(d.username, d.password);
+      }
+      data.push({
         ekubId,
         name: d.name,
         address: d.address,
         phone: d.phone,
         preferredAmount: d.preferredAmount,
-      })),
-    });
+        ...(creds
+          ? { username: creds.username, password: creds.password }
+          : {}),
+      });
+    }
+    await this.prisma.member.createMany({ data });
     return this.findOne(ekubId);
+  }
+
+  /** Validates + hashes optional member login credentials. Both fields must be
+   *  present together, and the username must not already exist. */
+  private async credentialsData(username?: string, password?: string) {
+    if (username === undefined && password === undefined) return undefined;
+    if (!username?.trim() || !password) {
+      throw new BadRequestException(
+        'Both username and password are required to create login credentials',
+      );
+    }
+    const uname = username.trim();
+    const taken = await this.prisma.member.findUnique({
+      where: { username: uname },
+    });
+    if (taken) {
+      throw new BadRequestException(`Username "${uname}" is already taken`);
+    }
+    return { username: uname, password: await bcrypt.hash(password, 10) };
   }
 
   /** Assigns every unallocated amount into the remaining space of non-drawn
@@ -1031,11 +1095,22 @@ export class EkubsService {
     }
   }
 
-  /** Randomly picks one PENDING quota as the winner. */
+  /** Randomly picks one PENDING quota as the winner. A new round can only be
+   *  drawn after the previous round's receipts have been confirmed by its
+   *  winner(s) — so the pot is always collected before the next draw. */
   async drawWinner(ekubId: number) {
+    await this.refreshRoundClosures(ekubId);
     const ekub = await this.findOne(ekubId);
     if (ekub.status !== EkubStatus.ACTIVE) {
       throw new BadRequestException('Ekub is not active');
+    }
+    const open = ekub.quotas.filter(
+      (q: any) => q.status === 'SELECTED' && !q.closedAt,
+    );
+    if (open.length > 0) {
+      throw new BadRequestException(
+        `Round ${open[0].position} is still collecting. A new winner can only be drawn after every member's receipt has been confirmed.`,
+      );
     }
     const pending = ekub.quotas.filter((q) => q.status === 'PENDING');
     if (pending.length === 0) {
@@ -1053,6 +1128,7 @@ export class EkubsService {
         data: { status: EkubStatus.COMPLETED },
       });
     }
+    await this.refreshRoundClosures(ekubId);
 
     const updated = await this.findOne(ekubId);
     const brief = (q: any) => ({
@@ -1069,8 +1145,28 @@ export class EkubsService {
     return updated;
   }
 
-  /** Undoes a single draw: the selected quota returns to pending and the
-   *  ekub becomes active again so another draw can run. */
+  /** Marks a drawn round as closed once every one of its winners has received
+   *  their full pot (i.e. all assigned payers' receipts were confirmed). The
+   *  next draw is only allowed after that, so callers run this after draws,
+   *  confirmations and admin receipt edits. */
+  async refreshRoundClosures(ekubId: number) {
+    const plan = await this.paymentPlan(ekubId);
+    let closed = 0;
+    for (const round of plan.rounds) {
+      if (round.closed) continue;
+      const complete =
+        round.winners.length > 0 &&
+        round.winners.every((w) => w.received >= w.pot);
+      if (complete) {
+        await this.prisma.quota.update({
+          where: { id: round.quotaId },
+          data: { closedAt: new Date() },
+        });
+        closed += 1;
+      }
+    }
+    return { closed };
+  }
   async reverseDraw(ekubId: number, quotaId: number) {
     const quota = await this.prisma.quota.findFirst({
       where: { id: quotaId, ekubId },

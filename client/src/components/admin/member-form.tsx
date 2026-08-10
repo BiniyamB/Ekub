@@ -14,6 +14,8 @@ interface Row {
   address: string;
   phone: string;
   preferredAmount: string;
+  username: string;
+  password: string;
 }
 
 export function MemberForm({
@@ -28,7 +30,15 @@ export function MemberForm({
   onUpdated: () => void;
 }) {
   const [rows, setRows] = useState<Row[]>([
-    { key: 1, name: "", address: "", phone: "", preferredAmount: "" },
+    {
+      key: 1,
+      name: "",
+      address: "",
+      phone: "",
+      preferredAmount: "",
+      username: "",
+      password: "",
+    },
   ]);
   const [loading, setLoading] = useState(false);
   const [quickAdd, setQuickAdd] = useState("");
@@ -42,6 +52,8 @@ export function MemberForm({
         address: "",
         phone: "",
         preferredAmount: "",
+        username: "",
+        password: "",
       },
     ]);
   }
@@ -70,6 +82,8 @@ export function MemberForm({
         address: "",
         phone: "",
         preferredAmount: "",
+        username: "",
+        password: "",
       })),
     ]);
     setQuickAdd("");
@@ -83,6 +97,8 @@ export function MemberForm({
         address: r.address.trim(),
         phone: r.phone.trim() || undefined,
         preferredAmount: parseInt(r.preferredAmount, 10),
+        username: r.username.trim() || undefined,
+        password: r.password || undefined,
       }))
       .filter((m) => m.name && m.preferredAmount > 0);
 
@@ -101,7 +117,15 @@ export function MemberForm({
       toast.success(`${members.length} member(s) registered`);
       onUpdated();
       setRows([
-        { key: Date.now(), name: "", address: "", phone: "", preferredAmount: "" },
+        {
+          key: Date.now(),
+          name: "",
+          address: "",
+          phone: "",
+          preferredAmount: "",
+          username: "",
+          password: "",
+        },
       ]);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to register");
@@ -136,39 +160,55 @@ export function MemberForm({
         {rows.map((row) => (
           <div
             key={row.key}
-            className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_auto] items-center gap-2 rounded-xl border border-border/70 bg-card p-2.5"
+            className="space-y-2 rounded-xl border border-border/70 bg-card p-2.5"
           >
-            <Input
-              placeholder="Name"
-              value={row.name}
-              onChange={(e) => updateRow(row.key, "name", e.target.value)}
-            />
-            <Input
-              placeholder="Address"
-              value={row.address}
-              onChange={(e) => updateRow(row.key, "address", e.target.value)}
-            />
-            <Input
-              placeholder="Phone"
-              value={row.phone}
-              onChange={(e) => updateRow(row.key, "phone", e.target.value)}
-            />
-            <Input
-              type="number"
-              min={1}
-              placeholder="Amount"
-              value={row.preferredAmount}
-              onChange={(e) =>
-                updateRow(row.key, "preferredAmount", e.target.value)
-              }
-            />
-            <button
-              type="button"
-              onClick={() => removeRow(row.key)}
-              className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            <div className="grid grid-cols-[1fr_1fr_0.8fr_0.8fr_auto] items-center gap-2">
+              <Input
+                placeholder="Name"
+                value={row.name}
+                onChange={(e) => updateRow(row.key, "name", e.target.value)}
+              />
+              <Input
+                placeholder="Address"
+                value={row.address}
+                onChange={(e) => updateRow(row.key, "address", e.target.value)}
+              />
+              <Input
+                placeholder="Phone"
+                value={row.phone}
+                onChange={(e) => updateRow(row.key, "phone", e.target.value)}
+              />
+              <Input
+                type="number"
+                min={1}
+                placeholder="Amount"
+                value={row.preferredAmount}
+                onChange={(e) =>
+                  updateRow(row.key, "preferredAmount", e.target.value)
+                }
+              />
+              <button
+                type="button"
+                onClick={() => removeRow(row.key)}
+                className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-500"
+                title="Remove member"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 items-center gap-2">
+              <Input
+                placeholder="Login username (e.g. amanuel)"
+                value={row.username}
+                onChange={(e) => updateRow(row.key, "username", e.target.value)}
+              />
+              <Input
+                placeholder="Login password"
+                type="text"
+                value={row.password}
+                onChange={(e) => updateRow(row.key, "password", e.target.value)}
+              />
+            </div>
           </div>
         ))}
       </div>

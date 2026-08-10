@@ -1,11 +1,38 @@
 export type Cycle = "WEEKLY" | "MONTHLY" | "ANNUALLY";
 export type EkubStatus = "ACTIVE" | "COMPLETED" | "CANCELLED";
 export type DrawStatus = "PENDING" | "SELECTED";
+export type PaymentStatus = "PENDING" | "SUBMITTED" | "PAID";
 
 export interface Admin {
   id: number;
   username: string;
   name: string;
+}
+
+export interface MemberAuth {
+  id: number;
+  username: string | null;
+  name: string;
+  ekubId: number;
+}
+
+export interface MemberAuthResponse {
+  access_token: string;
+  member: MemberAuth;
+}
+
+export interface MeMember extends MemberAuth {
+  address: string;
+  phone: string | null;
+  preferredAmount: number;
+  quotaAmount: number | null;
+  quotaId: number | null;
+}
+
+export interface MeResponse {
+  member: MeMember;
+  ekub: Ekub;
+  plan: PaymentPlan;
 }
 
 export interface Payment {
@@ -16,8 +43,9 @@ export interface Payment {
   amount: number;
   receiptUrl: string | null;
   note: string | null;
-  status: "PAID" | "PENDING";
+  status: PaymentStatus;
   paidAt: string;
+  confirmedByWinnerAt: string | null;
   createdAt: string;
   member?: Member;
   recipient?: Member | null;
@@ -33,6 +61,7 @@ export interface Member {
   quotaAmount: number | null;
   shareGroup: number | null;
   quotaId: number | null;
+  username: string | null;
   createdAt: string;
 }
 
@@ -42,6 +71,7 @@ export interface Quota {
   position: number;
   status: DrawStatus;
   winnerAt: string | null;
+  closedAt: string | null;
   members: Member[];
   payments: Payment[];
 }
@@ -108,12 +138,16 @@ export interface PlanReceipt {
   amount: number;
   receiptUrl: string | null;
   paidAt: string;
+  status: PaymentStatus;
+  confirmedByWinnerAt: string | null;
 }
 
 export interface PaymentRound {
   quotaId: number;
   position: number;
   winnerAt: string | null;
+  closedAt: string | null;
+  closed: boolean;
   pot: number;
   winners: PlanWinner[];
   payers: PlanPayer[];

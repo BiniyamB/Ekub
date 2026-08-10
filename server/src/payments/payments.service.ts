@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { EkubsService } from '../ekubs/ekubs.service';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private ekubs: EkubsService,
+  ) {}
 
   async createReceipt(data: {
     quotaId: number;
@@ -29,7 +33,7 @@ export class PaymentsService {
       if (!recipient) throw new NotFoundException('Payee not found');
     }
 
-    return this.prisma.payment.create({
+    const created = await this.prisma.payment.create({
       data: {
         quotaId: data.quotaId,
         memberId: data.memberId,
@@ -40,6 +44,8 @@ export class PaymentsService {
         status: PaymentStatus.PAID,
       },
     });
+    await this.ekubs.refreshRoundClosures(quota.ekubId);
+    return created;
   }
 
   async updatePayment(
@@ -57,7 +63,7 @@ export class PaymentsService {
       });
       if (!recipient) throw new NotFoundException('Payee not found');
     }
-    return this.prisma.payment.update({
+    const updated = await this.prisma.payment.update({
       where: { id },
       data: {
         amount: data.amount,
@@ -65,12 +71,18 @@ export class PaymentsService {
         recipientId: data.recipientId,
       },
     });
+    await this.ekubs.refreshRoundClosures(payment.member.ekubId);
+    return updated;
   }
 
   async delete(id: number) {
-    const payment = await this.prisma.payment.findUnique({ where: { id } });
+    const payment = await this.prisma.payment.findUnique({
+      where: { id },
+      include: { quota: { select: { ekubId: true } } },
+    });
     if (!payment) throw new NotFoundException('Payment not found');
     await this.prisma.payment.delete({ where: { id } });
+    await this.ekubs.refreshRoundClosures(payment.quota.ekubId);
     return { ok: true };
   }
 }

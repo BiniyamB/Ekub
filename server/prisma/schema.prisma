@@ -26,8 +26,9 @@ enum DrawStatus {
 }
 
 enum PaymentStatus {
-  PAID
   PENDING
+  SUBMITTED
+  PAID
 }
 
 model Admin {
@@ -63,6 +64,8 @@ model Member {
   quotaAmount     Int?
   shareGroup      Int?
   quotaId         Int?
+  username        String?  @unique
+  password        String?
   createdAt       DateTime @default(now())
 
   ekub     Ekub      @relation(fields: [ekubId], references: [id], onDelete: Cascade)
@@ -77,6 +80,7 @@ model Quota {
   position Int
   status   DrawStatus @default(PENDING)
   winnerAt DateTime?
+  closedAt DateTime?
 
   ekub     Ekub      @relation(fields: [ekubId], references: [id], onDelete: Cascade)
   members  Member[]
@@ -92,6 +96,7 @@ model Payment {
   note       String?
   status     PaymentStatus @default(PAID)
   paidAt     DateTime      @default(now())
+  confirmedByWinnerAt DateTime?
   createdAt  DateTime      @default(now())
 
   quota      Quota    @relation(fields: [quotaId], references: [id], onDelete: Cascade)

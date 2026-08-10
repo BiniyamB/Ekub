@@ -30,6 +30,7 @@ export class AuthService {
       sub: admin.id,
       username: admin.username,
       name: admin.name,
+      type: 'admin' as const,
     };
     return {
       access_token: await this.jwt.signAsync(payload),
@@ -37,6 +38,35 @@ export class AuthService {
         id: admin.id,
         username: admin.username,
         name: admin.name,
+      },
+    };
+  }
+
+  /** Member sign-in. Every member is registered from the admin side with a
+   *  username + password, then logs in at the landing page. */
+  async loginMember(username: string, password: string) {
+    const member = await this.prisma.member.findUnique({ where: { username } });
+    if (!member || !member.password) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const ok = await bcrypt.compare(password, member.password);
+    if (!ok) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    const payload = {
+      sub: member.id,
+      username: member.username,
+      name: member.name,
+      type: 'member' as const,
+      ekubId: member.ekubId,
+    };
+    return {
+      access_token: await this.jwt.signAsync(payload),
+      member: {
+        id: member.id,
+        username: member.username,
+        name: member.name,
+        ekubId: member.ekubId,
       },
     };
   }

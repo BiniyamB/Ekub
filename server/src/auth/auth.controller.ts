@@ -11,6 +11,11 @@ export class AuthController {
     return this.auth.login(body.username, body.password);
   }
 
+  @Post('member/login')
+  loginMember(@Body() body: { username: string; password: string }) {
+    return this.auth.loginMember(body.username, body.password);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Patch('credentials')
   changeCredentials(

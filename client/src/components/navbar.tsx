@@ -23,18 +23,6 @@ export function Navbar() {
         </Link>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <Link
-            href="/#ekubs"
-            className="hidden rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground sm:block"
-          >
-            Ekubs
-          </Link>
-          <Link
-            href="/#how-it-works"
-            className="hidden rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground sm:block"
-          >
-            How it works
-          </Link>
           <ThemeToggle />
           <Link
             href={isAdmin ? "/" : "/admin"}

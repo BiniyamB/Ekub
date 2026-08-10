@@ -30,6 +30,8 @@ export function EditMemberForm({
   const [quotaAmount, setQuotaAmount] = useState(
     String(member.quotaAmount ?? member.preferredAmount),
   );
+  const [username, setUsername] = useState(member.username ?? "");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -44,6 +46,8 @@ export function EditMemberForm({
           address,
           phone: phone || null,
           preferredAmount: parseInt(preferredAmount, 10),
+          username: username.trim() || undefined,
+          password: password || undefined,
         }),
       });
       const final = await apiFetch<Ekub>(
@@ -119,6 +123,26 @@ export function EditMemberForm({
             title="Exact amount this member contributes inside the selected quota"
           />
         </div>
+      </div>
+      <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5">
+        <Label>Member login credentials</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            placeholder="Username (e.g. amanuel)"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+          <Input
+            placeholder="New password (leave blank to keep)"
+            type="text"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
+        <p className="mt-1.5 text-[11px] text-muted-foreground">
+          The member signs in with these at the home page. Username is required
+          for a password to take effect.
+        </p>
       </div>
       <p className="text-xs text-muted-foreground">
         Quota value is {ekub.quotaAmount} Br — the share defaults to the

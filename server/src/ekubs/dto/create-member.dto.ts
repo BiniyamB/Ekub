@@ -16,6 +16,16 @@ export class CreateMemberDto {
   @IsInt()
   @Min(1)
   preferredAmount: number;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  password?: string;
 }
 
 export class RegisterMembersDto {

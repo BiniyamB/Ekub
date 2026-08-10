@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { EkubsModule } from './ekubs/ekubs.module';
 import { PaymentsModule } from './payments/payments.module';
+import { MembersModule } from './members/members.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { PaymentsModule } from './payments/payments.module';
     AuthModule,
     EkubsModule,
     PaymentsModule,
+    MembersModule,
   ],
   controllers: [AppController],
   providers: [AppService],
