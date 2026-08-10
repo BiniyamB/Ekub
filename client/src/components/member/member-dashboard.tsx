@@ -2,20 +2,27 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  ArrowUpRight,
   CheckCircle2,
   CircleDashed,
   Clock,
   Coins,
+  Eye,
   LogOut,
+  Radio,
   Send,
+  ShieldCheck,
+  Sparkles,
   Trophy,
   Upload,
   Users,
   Wallet,
 } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { apiFetch, UPLOADS_URL } from "@/lib/api";
 import type {
+  Ekub,
   MeMember,
   MeResponse,
   PlanReceipt,
@@ -25,6 +32,9 @@ import { cn, formatDate, formatMoney } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ProgressBar } from "@/components/ui/progress";
+import { EkubCard } from "@/components/ekub-card";
+import { Reveal } from "@/components/reveal";
+import { useDrawEvents } from "@/hooks/use-draw-events";
 import { PayerPaymentModal } from "@/components/member/payer-payment-modal";
 import { ReceiptDetailModal } from "@/components/member/receipt-detail-modal";
 
@@ -285,6 +295,38 @@ export function MemberDashboard({
         </div>
       )}
 
+      {/* Live draw + ekub detail for this member's circle */}
+      <MemberEkubView ekub={ekub} onRefresh={refresh} />
+
+      {/* Browse all public ekubs */}
+      <BrowseEkubs />
+
+      {/* How it works */}
+      <HowItWorks />
+
+      {/* CTA */}
+      <Reveal className="mt-16">
+        <div className="hero-gradient relative overflow-hidden rounded-3xl p-10 text-center text-white shadow-2xl shadow-fuchsia-500/30 sm:p-12">
+          <div className="pointer-events-none absolute inset-0 opacity-20">
+            <div className="absolute -left-10 -top-10 h-56 w-56 rounded-full bg-white/30 blur-3xl" />
+            <div className="absolute -bottom-10 -right-10 h-56 w-56 rounded-full bg-amber-300/40 blur-3xl" />
+          </div>
+          <h2 className="relative text-2xl font-extrabold sm:text-3xl">
+            Ready to run a transparent savings circle?
+          </h2>
+          <p className="relative mx-auto mt-3 max-w-lg text-white/85">
+            Open the admin panel to create your first ekub and invite members
+            to start saving together.
+          </p>
+          <a
+            href="/admin"
+            className="relative mt-7 inline-flex h-12 items-center gap-2 rounded-2xl bg-white px-8 text-base font-bold text-fuchsia-700 shadow-xl transition-all hover:scale-105 active:scale-95"
+          >
+            Open admin panel <ArrowUpRight className="h-4 w-4" />
+          </a>
+        </div>
+      </Reveal>
+
       {/* Payer payment popup */}
       {current && (
         <PayerPaymentModal
@@ -478,5 +520,352 @@ function PayerPanel({
         after reviewing the receipt.
       </p>
     </div>
+  );
+}
+
+/** Restores the live-draw + quota/member detail experience for this member's
+ *  own ekub: members list, quota slots with the members inside each one, and
+ *  a link to watch the draw live while the admin runs it. */
+function MemberEkubView({
+  ekub,
+  onRefresh,
+}: {
+  ekub: Ekub;
+  onRefresh: () => Promise<void>;
+}) {
+  useDrawEvents(
+    ekub.id,
+    () => {
+      void onRefresh();
+    },
+    () => {
+      void onRefresh();
+    },
+  );
+
+  return (
+    <Reveal className="mt-14">
+      <div className="mb-4">
+        <LandingBadge />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+            {ekub.name}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Live members, quotas and the draw — always public.
+          </p>
+        </div>
+        <Link
+          href={`/watch/${ekub.id}`}
+          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-4 py-2 text-sm font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/20 dark:text-emerald-400"
+        >
+          <Radio className="h-4 w-4" /> Watch live draw
+        </Link>
+      </div>
+
+      {/* Members */}
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {ekub.members.map((m) => (
+          <div
+            key={m.id}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3.5 transition-colors hover:border-primary/40"
+          >
+            <div className="hero-gradient flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
+              {m.name
+                .split(" ")
+                .map((p) => p[0])
+                .slice(0, 2)
+                .join("")}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-bold">{m.name}</div>
+              <div className="truncate text-xs text-muted-foreground">
+                {m.address}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-extrabold text-primary">
+                {formatMoney(m.preferredAmount)}
+              </div>
+              <div className="text-[10px] text-muted-foreground">
+                {m.quotaId ? `quota #${m.quotaId}` : "unassigned"}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Quota timeline: which members are in each quota */}
+      <div className="mt-8">
+        <h3 className="mb-1 flex items-center gap-2 text-xl font-bold">
+          <Coins className="h-5 w-5 text-primary" /> Quota slots
+        </h3>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Every member is combined into a quota slot. Members of a drawn quota
+          share that round&apos;s pot.
+        </p>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {ekub.quotas.map((quota) => {
+            const isWinner = quota.status === "SELECTED";
+            const total = quota.members.reduce(
+              (s, m) => s + (m.quotaAmount ?? m.preferredAmount),
+              0,
+            );
+            return (
+              <div
+                key={quota.id}
+                className={cn(
+                  "relative overflow-hidden rounded-2xl border bg-card p-5 transition-all hover:shadow-lg",
+                  isWinner
+                    ? "border-amber-400/60 shadow-lg shadow-amber-500/10"
+                    : "border-border",
+                )}
+              >
+                {isWinner && (
+                  <div className="hero-gradient absolute inset-x-0 top-0 h-1" />
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div
+                      className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-xl text-sm font-extrabold",
+                        isWinner
+                          ? "hero-gradient text-white shadow-lg shadow-amber-500/30"
+                          : "bg-muted text-muted-foreground",
+                      )}
+                    >
+                      #{quota.position}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold">
+                        Quota {quota.position}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {isWinner
+                          ? `Won on ${formatDate(quota.winnerAt)}`
+                          : "Awaiting draw"}
+                      </div>
+                    </div>
+                  </div>
+                  {isWinner ? (
+                    <Badge tone="warning" className="animate-pulse">
+                      <Trophy className="h-3 w-3" /> Winner
+                    </Badge>
+                  ) : (
+                    <Badge>Pending</Badge>
+                  )}
+                </div>
+
+                <div className="mt-4 space-y-1.5">
+                  {quota.members.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between rounded-xl bg-muted/50 px-3 py-2 text-sm"
+                    >
+                      <span className="font-semibold">{m.name}</span>
+                      <span className="text-muted-foreground">
+                        {formatMoney(m.quotaAmount ?? m.preferredAmount)}
+                      </span>
+                    </div>
+                  ))}
+                  {quota.members.length === 0 && (
+                    <p className="rounded-xl bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+                      No members assigned yet.
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-3 flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">
+                    Slot total:{" "}
+                    <span className="font-bold text-foreground">
+                      {formatMoney(total)}
+                    </span>{" "}
+                    / {formatMoney(ekub.quotaAmount)}
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-muted-foreground">
+                    <Eye className="h-3.5 w-3.5" />
+                    {quota.members.length} member
+                    {quota.members.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </Reveal>
+  );
+}
+
+/** Restores the public "Live ekub circles" grid from the landing page — every
+ *  ekub is browsable and each card links to its public detail / draw. */
+function BrowseEkubs() {
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["ekubs"],
+    queryFn: () => apiFetch<Ekub[]>("/ekubs"),
+  });
+
+  const ekubs = data ?? [];
+  const totalSaved = ekubs.reduce((s, e) => s + e.totalCollected, 0);
+  const totalMembers = ekubs.reduce((s, e) => s + e.totalMembers, 0);
+  const winners = ekubs.reduce((s, e) => s + e.drawnQuotas, 0);
+
+  return (
+    <section id="ekubs" className="mt-16 scroll-mt-24">
+      <Reveal>
+        <div className="mb-8 flex items-end justify-between">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              Live ekub circles
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Every quota, winner and receipt is visible to everyone.
+            </p>
+          </div>
+          <span className="hidden rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground sm:block">
+            {ekubs.length} total
+          </span>
+        </div>
+      </Reveal>
+
+      <Reveal delay={0.05} className="mb-8">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+          {[
+            { icon: Coins, label: "Active ekubs", value: String(ekubs.length) },
+            {
+              icon: Users,
+              label: "Total members",
+              value: String(totalMembers),
+            },
+            { icon: Trophy, label: "Winners drawn", value: String(winners) },
+            {
+              icon: ShieldCheck,
+              label: "Collected",
+              value: formatMoney(totalSaved),
+            },
+          ].map((s) => (
+            <div
+              key={s.label}
+              className="glass flex flex-col items-center gap-1 rounded-2xl p-4"
+            >
+              <s.icon className="h-5 w-5 text-primary" />
+              <div className="text-xl font-extrabold sm:text-2xl">
+                {s.value}
+              </div>
+              <div className="text-xs text-muted-foreground">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </Reveal>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="shimmer-line h-72 animate-shimmer rounded-2xl"
+            />
+          ))}
+        </div>
+      ) : isError ? (
+        <div className="glass flex flex-col items-center gap-3 rounded-3xl p-14 text-center">
+          <h3 className="text-lg font-bold">Could not load ekubs</h3>
+          <Button variant="outline" onClick={() => void refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : ekubs.length === 0 ? (
+        <div className="glass flex flex-col items-center gap-3 rounded-3xl p-14 text-center">
+          <div className="hero-gradient flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-xl shadow-fuchsia-500/30">
+            <Coins className="h-8 w-8" />
+          </div>
+          <h3 className="text-xl font-bold">No ekubs yet</h3>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            The admin can create the first ekub circle from the admin panel.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {ekubs.map((ekub, i) => (
+            <EkubCard key={ekub.id} ekub={ekub} index={i} />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Restores the landing page "How an ekub works" explainer. */
+function HowItWorks() {
+  return (
+    <section
+      id="how-it-works"
+      className="mt-16 scroll-mt-24 border-y border-border/60 bg-muted/30 py-20"
+    >
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <Reveal>
+          <div className="mb-12 text-center">
+            <h2 className="text-2xl font-extrabold tracking-tight sm:text-3xl">
+              How an ekub works here
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
+              From creating a circle to collecting the pot — four simple steps.
+            </p>
+          </div>
+        </Reveal>
+
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              n: "01",
+              title: "Create the circle",
+              desc: "Set the quota value (e.g. 50,000 Br), pick weekly, monthly or yearly, and choose how many quotas to run.",
+            },
+            {
+              n: "02",
+              title: "Register members",
+              desc: "Add each member with their address and preferred amount. The system automatically combines people to fill each quota.",
+            },
+            {
+              n: "03",
+              title: "Draw the winner",
+              desc: "A random selector picks one quota per round — fairly, with no favorites. Watch it live.",
+            },
+            {
+              n: "04",
+              title: "Track receipts",
+              desc: "Each member of the winning quota uploads their receipt so every payment is public and verifiable.",
+            },
+          ].map((step, i) => (
+            <Reveal key={step.n} delay={i * 0.1}>
+              <div className="group relative h-full overflow-hidden rounded-2xl border border-border bg-card p-5 transition-all hover:-translate-y-1 hover:shadow-lg hover:shadow-primary/10">
+                <div className="hero-gradient absolute -right-6 -top-6 h-20 w-20 rounded-full opacity-15 blur-xl transition-opacity group-hover:opacity-30" />
+                <div className="text-4xl font-extrabold text-primary/25 transition-colors group-hover:text-primary/50">
+                  {step.n}
+                </div>
+                <h3 className="mt-3 text-base font-bold">{step.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {step.desc}
+                </p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Restores the landing hero sparkline badge style at the top of the browse
+ *  sections. */
+function LandingBadge() {
+  return (
+    <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium text-muted-foreground">
+      <Sparkles className="h-4 w-4 text-amber-500" />
+      Traditional ekub, reimagined for the digital age
+    </span>
   );
 }
