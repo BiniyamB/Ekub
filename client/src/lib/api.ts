@@ -1,8 +1,12 @@
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
+const API_ORIGIN = API_URL.endsWith("/api")
+  ? API_URL.slice(0, -4)
+  : API_URL;
+
 export const UPLOADS_URL =
-  process.env.NEXT_PUBLIC_UPLOADS_URL ?? "http://localhost:4000";
+  process.env.NEXT_PUBLIC_UPLOADS_URL ?? API_ORIGIN;
 
 export async function apiFetch<T>(
   path: string,
