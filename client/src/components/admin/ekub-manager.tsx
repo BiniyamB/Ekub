@@ -426,12 +426,19 @@ export function EkubManager({
                         className="flex items-center gap-3 rounded-xl bg-muted/40 p-2"
                       >
                         {p.receiptUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={`${UPLOADS_URL}${p.receiptUrl}`}
-                            alt="receipt"
-                            className="h-10 w-10 rounded-lg object-cover"
-                          />
+                          <a
+                            href={`${UPLOADS_URL}${p.receiptUrl}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            title="Open full receipt image"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={`${UPLOADS_URL}${p.receiptUrl}`}
+                              alt="receipt"
+                              className="h-10 w-10 rounded-lg object-cover transition-transform hover:scale-105"
+                            />
+                          </a>
                         ) : (
                           <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-[9px] text-muted-foreground">
                             no file

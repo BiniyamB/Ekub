@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { apiFetch, UPLOADS_URL } from "@/lib/api";
@@ -45,23 +45,35 @@ export function ReceiptDetailModal({
   const confirmed = receipt?.status === "PAID";
 
   return (
-    <Modal open={open} onClose={onClose} title="Review receipt">
+    <Modal open={open} onClose={onClose} title="Review receipt" wide>
       {receipt && (
         <div className="space-y-4">
-          <div className="overflow-hidden rounded-2xl border border-border bg-muted/30">
+          <div className="rounded-2xl border border-border bg-muted/30">
             {receipt.receiptUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={`${UPLOADS_URL}${receipt.receiptUrl}`}
-                alt="payment receipt"
-                className="max-h-96 w-full object-contain"
-              />
+              <div className="max-h-[70vh] overflow-y-auto">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${UPLOADS_URL}${receipt.receiptUrl}`}
+                  alt="payment receipt"
+                  className="mx-auto h-auto w-auto max-w-full object-contain"
+                />
+              </div>
             ) : (
-              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+              <div className="flex h-48 items-center justify-center rounded-2xl text-sm text-muted-foreground">
                 No receipt image attached
               </div>
             )}
           </div>
+          {receipt.receiptUrl && (
+            <a
+              href={`${UPLOADS_URL}${receipt.receiptUrl}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+            >
+              Open full image <ArrowUpRight className="h-3.5 w-3.5" />
+            </a>
+          )}
 
           <div className="rounded-2xl border border-border bg-card p-4">
             <div className="flex items-center justify-between">

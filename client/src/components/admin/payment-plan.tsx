@@ -234,12 +234,19 @@ export function PaymentPlanPanel({ ekub, token }: { ekub: Ekub; token: string })
                       className="flex items-center gap-2 rounded-xl bg-muted/40 px-2.5 py-2"
                     >
                       {r.receiptUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={`${UPLOADS_URL}${r.receiptUrl}`}
-                          alt="receipt"
-                          className="h-8 w-8 rounded-lg object-cover"
-                        />
+                        <a
+                          href={`${UPLOADS_URL}${r.receiptUrl}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          title="Open full receipt image"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={`${UPLOADS_URL}${r.receiptUrl}`}
+                            alt="receipt"
+                            className="h-8 w-8 rounded-lg object-cover transition-transform hover:scale-105"
+                          />
+                        </a>
                       ) : (
                         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-[8px] text-muted-foreground">
                           no file
