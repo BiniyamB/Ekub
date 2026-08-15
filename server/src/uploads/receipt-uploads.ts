@@ -4,6 +4,9 @@ import { diskStorage, memoryStorage } from 'multer';
 import { extname, join } from 'path';
 import { randomBytes } from 'crypto';
 import { v2 as cloudinary } from 'cloudinary';
+import { BadRequestException, Logger } from '@nestjs/common';
+
+const logger = new Logger('ReceiptUploads');
 
 export const UPLOADS_DIR = join(process.cwd(), 'uploads');
 
@@ -44,7 +47,7 @@ export async function resolveReceiptUrl(
 ): Promise<string | null> {
   if (!file) return null;
   if (file.buffer) {
-    return uploadToCloudinary(file);
+    return uploadReceiptBuffer(file);
   }
   return `/uploads/${file.filename}`;
 }
@@ -76,6 +79,24 @@ function uploadToCloudinary(file: Express.Multer.File): Promise<string> {
     );
     stream.end(file.buffer);
   });
+}
+
+/** Upload a receipt buffer to Cloudinary, turning failures into a readable
+ *  HTTP error so the client (and logs) show the real reason instead of a
+ *  generic 500. */
+async function uploadReceiptBuffer(file: Express.Multer.File): Promise<string> {
+  try {
+    const url = await uploadToCloudinary(file);
+    if (!url) throw new Error('Cloudinary returned no URL');
+    return url;
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : 'unknown Cloudinary error';
+    logger.error(`Cloudinary receipt upload failed: ${message}`);
+    throw new BadRequestException(
+      `Receipt upload to Cloudinary failed: ${message}`,
+    );
+  }
 }
 
 function publicIdFromCloudinaryUrl(url: string): string | null {
