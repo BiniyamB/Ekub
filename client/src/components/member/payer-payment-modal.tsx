@@ -3,7 +3,7 @@
 import { FileUp, Send, Trash2, UserCheck } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { API_URL, UPLOADS_URL } from "@/lib/api";
+import { API_URL, receiptImageUrl } from "@/lib/api";
 import type { MeMember, PaymentRound, PlanReceipt } from "@/lib/types";
 import { formatMoney } from "@/lib/format";
 import { Button } from "@/components/ui/button";
@@ -175,7 +175,7 @@ export function PayerPaymentModal({
                 <span className="overflow-hidden rounded-lg border border-border">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`${UPLOADS_URL}${editing.receiptUrl}`}
+                    src={receiptImageUrl(editing.receiptUrl)}
                     alt="current receipt"
                     className="h-16 w-16 object-cover"
                   />

@@ -478,15 +478,17 @@ So a real deploy **must** switch to persistent external storage:
 - **Database**: Neon (serverless Postgres) or Supabase. Update `DATABASE_URL`,
   run `npx prisma migrate deploy` + seed. Prisma already works with Postgres —
   only the schema `provider`/connection changes.
-- **Receipts**: Cloudinary (or S3). Upload to Cloudinary instead of disk and store
-  the returned URL in `Payment.receiptUrl` (already a string field, so this is a
-  small change in `payments.service.ts` only).
+- **Receipts**: Cloudinary (or S3). Already implemented — `server/src/uploads/receipt-uploads.ts`
+  uploads receipt images to Cloudinary when `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` /
+  `CLOUDINARY_API_SECRET` are set (and stores the CDN URL in `Payment.receiptUrl`), and falls
+  back to the local disk when they are not (local dev).
 
 ### Recommended free stack
 
 - **Frontend** → Vercel (free, persistent builds) pointing at the deployed API.
 - **API** → Render free web service (NestJS) with env vars `DATABASE_URL`,
-  `JWT_SECRET`, `PORT=4000`; add `uploads` → Cloudinary.
+  `JWT_SECRET`, `PORT=4000`, plus `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`,
+  `CLOUDINARY_API_SECRET` (see `render.yaml`).
 - **DB** → Neon / Supabase free Postgres.
 - **Realtime** → SSE works fine over Render (long-lived connections OK; the
   20 s heartbeat keeps them alive).
@@ -496,8 +498,8 @@ So a real deploy **must** switch to persistent external storage:
 1. A GitHub repo for the project (currently not a git repo) and push.
 2. Your free accounts (Neon/Supabase, Cloudinary, Render/Vercel) — I can't create
    them for you.
-3. Small code change in `payments.service.ts` to push to Cloudinary instead of
-   local disk, and `.env` updates.
+3. Set the three `CLOUDINARY_*` env vars on Render (code support for Cloudinary is
+   already in the repo).
 
 ---
 

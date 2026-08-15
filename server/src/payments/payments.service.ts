@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EkubsService } from '../ekubs/ekubs.service';
+import { deleteReceiptImage } from '../uploads/receipt-uploads';
 
 @Injectable()
 export class PaymentsService {
@@ -81,7 +82,9 @@ export class PaymentsService {
       include: { quota: { select: { ekubId: true } } },
     });
     if (!payment) throw new NotFoundException('Payment not found');
+    const receiptUrl = payment.receiptUrl;
     await this.prisma.payment.delete({ where: { id } });
+    await deleteReceiptImage(receiptUrl);
     await this.ekubs.refreshRoundClosures(payment.quota.ekubId);
     return { ok: true };
   }

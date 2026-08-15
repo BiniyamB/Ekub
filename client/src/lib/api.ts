@@ -8,6 +8,17 @@ const API_ORIGIN = API_URL.endsWith("/api")
 export const UPLOADS_URL =
   process.env.NEXT_PUBLIC_UPLOADS_URL ?? API_ORIGIN;
 
+/** Receipt images are stored either as a full CDN url (Cloudinary in prod) or
+ *  as a `/uploads/...` path served by the API. Returns something an <img>
+ *  can load directly ("" when there is no url). */
+export function receiptImageUrl(
+  url: string | null | undefined,
+): string {
+  if (!url) return "";
+  if (/^https?:\/\//i.test(url)) return url;
+  return `${UPLOADS_URL}${url}`;
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit & { token?: string } = {},

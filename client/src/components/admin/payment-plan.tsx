@@ -12,7 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { useState } from "react";
-import { apiFetch, UPLOADS_URL } from "@/lib/api";
+import { apiFetch, receiptImageUrl } from "@/lib/api";
 import type { Ekub, PayStatus, PaymentPlan } from "@/lib/types";
 import { formatDate, formatMoney } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -235,14 +235,14 @@ export function PaymentPlanPanel({ ekub, token }: { ekub: Ekub; token: string })
                     >
                       {r.receiptUrl ? (
                         <a
-                          href={`${UPLOADS_URL}${r.receiptUrl}`}
+                          href={receiptImageUrl(r.receiptUrl)}
                           target="_blank"
                           rel="noreferrer"
                           title="Open full receipt image"
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={`${UPLOADS_URL}${r.receiptUrl}`}
+                            src={receiptImageUrl(r.receiptUrl)}
                             alt="receipt"
                             className="h-8 w-8 rounded-lg object-cover transition-transform hover:scale-105"
                           />

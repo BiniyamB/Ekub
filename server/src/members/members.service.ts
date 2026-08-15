@@ -7,6 +7,10 @@ import {
 import { PaymentStatus } from '../generated/prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EkubsService } from '../ekubs/ekubs.service';
+import {
+  deleteReceiptImage,
+  resolveReceiptUrl,
+} from '../uploads/receipt-uploads';
 
 export type MemberAuthUser = {
   id: number;
@@ -131,7 +135,7 @@ export class MembersService {
         recipientId: data.recipientId,
         amount: data.amount,
         note: data.note,
-        receiptUrl: `/uploads/${file.filename}`,
+        receiptUrl: (await resolveReceiptUrl(file)) ?? '',
         status: PaymentStatus.SUBMITTED,
       },
     });
@@ -165,16 +169,19 @@ export class MembersService {
       throw new BadRequestException('Enter a paid amount');
     }
 
-    return this.prisma.payment.update({
+    const oldUrl = payment.receiptUrl;
+    const updated = await this.prisma.payment.update({
       where: { id: paymentId },
       data: {
         amount: data.amount,
         ...(data.note !== undefined ? { note: data.note } : {}),
-        ...(file
-          ? { receiptUrl: `/uploads/${file.filename}` }
-          : {}),
+        ...(file ? { receiptUrl: (await resolveReceiptUrl(file)) ?? '' } : {}),
       },
     });
+    if (file && oldUrl && oldUrl !== updated.receiptUrl) {
+      await deleteReceiptImage(oldUrl);
+    }
+    return updated;
   }
 
   /** The payer deletes their own submitted receipt. Only allowed while the
@@ -194,7 +201,9 @@ export class MembersService {
     if (payment.quota.closedAt) {
       throw new BadRequestException('This round is already closed');
     }
+    const receiptUrl = payment.receiptUrl;
     await this.prisma.payment.delete({ where: { id: paymentId } });
+    await deleteReceiptImage(receiptUrl);
     return { ok: true };
   }
 

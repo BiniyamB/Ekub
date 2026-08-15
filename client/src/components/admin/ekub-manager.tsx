@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiFetch, UPLOADS_URL } from "@/lib/api";
+import { apiFetch, receiptImageUrl } from "@/lib/api";
 import type { Ekub, EkubStatus, Member, Payment, PaymentPlan } from "@/lib/types";
 import { cn, formatDate, formatMoney } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -427,14 +427,14 @@ export function EkubManager({
                       >
                         {p.receiptUrl ? (
                           <a
-                            href={`${UPLOADS_URL}${p.receiptUrl}`}
+                            href={receiptImageUrl(p.receiptUrl)}
                             target="_blank"
                             rel="noreferrer"
                             title="Open full receipt image"
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={`${UPLOADS_URL}${p.receiptUrl}`}
+                              src={receiptImageUrl(p.receiptUrl)}
                               alt="receipt"
                               className="h-10 w-10 rounded-lg object-cover transition-transform hover:scale-105"
                             />

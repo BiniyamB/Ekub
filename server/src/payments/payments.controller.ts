@@ -11,10 +11,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { randomBytes } from 'crypto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { receiptStorage, resolveReceiptUrl } from '../uploads/receipt-uploads';
 import { PaymentsService } from './payments.service';
 
 @Controller('payments')
@@ -25,16 +23,10 @@ export class PaymentsController {
   @Post()
   @UseInterceptors(
     FileInterceptor('receipt', {
-      storage: diskStorage({
-        destination: join(process.cwd(), 'uploads'),
-        filename: (_req, file, cb) => {
-          const name = `${Date.now()}-${randomBytes(4).toString('hex')}${extname(file.originalname)}`;
-          cb(null, name);
-        },
-      }),
+      storage: receiptStorage(),
     }),
   )
-  createReceipt(
+  async createReceipt(
     @UploadedFile() file: Express.Multer.File | undefined,
     @Body()
     body: {
@@ -45,7 +37,7 @@ export class PaymentsController {
       note?: string;
     },
   ) {
-    const receiptUrl = file ? `/uploads/${file.filename}` : null;
+    const receiptUrl = await resolveReceiptUrl(file);
     return this.payments.createReceipt({
       quotaId: parseInt(body.quotaId, 10),
       memberId: parseInt(body.memberId, 10),

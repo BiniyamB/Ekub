@@ -19,7 +19,7 @@ import {
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import type { Ekub, PayStatus, Payment, PaymentPlan } from "@/lib/types";
-import { UPLOADS_URL, apiFetch } from "@/lib/api";
+import { apiFetch, receiptImageUrl } from "@/lib/api";
 import { cn, formatDate, formatMoney } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
 import { ProgressBar } from "@/components/ui/progress";
@@ -285,7 +285,7 @@ export function EkubDetail({
                           {p.receiptUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={`${UPLOADS_URL}${p.receiptUrl}`}
+                              src={receiptImageUrl(p.receiptUrl)}
                               alt={`Receipt for ${p.member?.name ?? "member"}`}
                               className="h-16 w-16 object-cover"
                             />
@@ -503,7 +503,7 @@ export function EkubDetail({
               {viewing.receiptUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={`${UPLOADS_URL}${viewing.receiptUrl}`}
+                  src={receiptImageUrl(viewing.receiptUrl)}
                   alt="Receipt"
                   className="max-h-[60vh] w-full bg-muted object-contain"
                 />

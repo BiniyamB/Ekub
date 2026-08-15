@@ -13,10 +13,8 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { randomBytes } from 'crypto';
 import { MemberJwtAuthGuard } from '../auth/member-jwt-auth.guard';
+import { receiptStorage } from '../uploads/receipt-uploads';
 import { MembersService, type MemberAuthUser } from './members.service';
 
 /** Member-scoped endpoints. Every route requires a member JWT (issued by
@@ -35,13 +33,7 @@ export class MembersController {
   @Post('receipts')
   @UseInterceptors(
     FileInterceptor('receipt', {
-      storage: diskStorage({
-        destination: join(process.cwd(), 'uploads'),
-        filename: (_req, file, cb) => {
-          const name = `${Date.now()}-${randomBytes(4).toString('hex')}${extname(file.originalname)}`;
-          cb(null, name);
-        },
-      }),
+      storage: receiptStorage(),
     }),
   )
   uploadReceipt(
@@ -66,13 +58,7 @@ export class MembersController {
   @Patch('receipts/:id')
   @UseInterceptors(
     FileInterceptor('receipt', {
-      storage: diskStorage({
-        destination: join(process.cwd(), 'uploads'),
-        filename: (_req, file, cb) => {
-          const name = `${Date.now()}-${randomBytes(4).toString('hex')}${extname(file.originalname)}`;
-          cb(null, name);
-        },
-      }),
+      storage: receiptStorage(),
     }),
   )
   updateReceipt(

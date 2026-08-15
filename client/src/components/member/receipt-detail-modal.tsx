@@ -3,7 +3,7 @@
 import { ArrowUpRight, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { apiFetch, UPLOADS_URL } from "@/lib/api";
+import { apiFetch, receiptImageUrl } from "@/lib/api";
 import type { PlanReceipt } from "@/lib/types";
 import { formatDate, formatMoney } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +53,7 @@ export function ReceiptDetailModal({
               <div className="max-h-[70vh] overflow-y-auto">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={`${UPLOADS_URL}${receipt.receiptUrl}`}
+                  src={receiptImageUrl(receipt.receiptUrl)}
                   alt="payment receipt"
                   className="mx-auto h-auto w-auto max-w-full object-contain"
                 />
@@ -66,7 +66,7 @@ export function ReceiptDetailModal({
           </div>
           {receipt.receiptUrl && (
             <a
-              href={`${UPLOADS_URL}${receipt.receiptUrl}`}
+              href={receiptImageUrl(receipt.receiptUrl)}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"

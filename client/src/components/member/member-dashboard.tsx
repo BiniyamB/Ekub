@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { apiFetch, UPLOADS_URL } from "@/lib/api";
+import { apiFetch, receiptImageUrl } from "@/lib/api";
 import type {
   Ekub,
   MeMember,
@@ -495,7 +495,7 @@ function WinnerPanel({
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`${UPLOADS_URL}${receipt.receiptUrl}`}
+                    src={receiptImageUrl(receipt.receiptUrl)}
                     alt="receipt"
                     className="h-11 w-11 object-cover"
                   />
